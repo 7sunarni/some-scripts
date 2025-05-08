@@ -1,0 +1,60 @@
+# kind in Kubernetes 
+# TODO
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kind-in-k8s
+  namespace: default
+spec:
+  containers:
+  - command:
+    - sh
+    - -c
+    - "xref: https://docs.docker.com/reference/cli/dockerd#
+      # kind issue https://kind.sigs.k8s.io/docs/user/known-issues/#pod-errors-due-to-too-many-open-files sysctl
+      fs.inotify.max_user_watches=524288 sysctl fs.inotify.max_user_instances=512 exec
+      /usr/local/bin/dockerd-entrypoint.sh -D -l debug --mtu 1400"
+    env:
+    image: docker:28
+    imagePullPolicy: IfNotPresent
+    name: main
+    resources: {}
+    securityContext:
+      privileged: true
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /var/run
+      name: docker-sock
+  - command:
+    - bash
+    - -xc
+    - |
+      # set -o errexit;
+      go install sigs.k8s.io/kind@v0.26.0;
+
+      kind create cluster --name kind --image m.daocloud.io/docker.io/kindest/node:v1.32.0 --retain;
+
+      sleep infinity;
+    image: golang:1.24.1
+    imagePullPolicy: IfNotPresent
+    name: kind
+    resources: {}
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /var/run
+      name: docker-sock
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  imagePullSecrets:
+  priority: 0
+  restartPolicy: Never
+  schedulerName: default-scheduler
+  securityContext: {}
+  serviceAccount: default
+  serviceAccountName: default
+  terminationGracePeriodSeconds: 30
+  volumes:
+  - emptyDir: {}
+    name: docker-sock
