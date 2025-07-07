@@ -1,3 +1,0 @@
-# !/bin/bash
-  
-ctr -n k8s.io t ls | grep -v "TASK" |  while read _ pid _; do echo "$pid:"; cat /proc/$pid/cmdline; echo '' ;echo '---'; done
